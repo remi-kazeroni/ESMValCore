@@ -19,20 +19,38 @@ class Thetao(Fix):
         cube.long_name = self.vardef.long_name
         cube.var_name = self.vardef.short_name
         cube.units = self.vardef.units
+        levels = cube.coord(var_name='deptht')
+        try:
+            cube.coord(var_name='time')
+        except iris.exceptions.CoordinateNotFoundError:
+            cube.add_dim_coord(
+                iris.coords.DimCoord(
+                    points=cubes.extract('time')[0].core_data(),
+                    var_name='time',
+                    standard_name='time',
+                    units=cubes.extract('time')[0].units,
+                    ),
+                0)
+
+        for coord in cube.coords():
+            if coord.var_name != 'time':
+                cube.remove_coord(coord)
         cube.add_aux_coord(
             cube_to_aux_coord(
                 cubes.extract('latitude')[0]), (2, 3))
         cube.add_aux_coord(
             cube_to_aux_coord(
                 cubes.extract('longitude')[0]), (2, 3))
-        cube.coord('Vertical T levels').standard_name = 'depth'
-        cube.coord('depth').var_name = 'lev'
-        cube.coord('depth').long_name = 'ocean depth coordinate'
-        cube.coord('depth').guess_bounds()
+        cube.add_dim_coord(
+            iris.coords.DimCoord(
+                points=levels.points,
+                var_name='lev',
+                standard_name='depth',
+                long_name='ocean depth coordinate',
+                units='m',
+                ),
+            1)
         return cube
-        #
-        #cube_signature.dim_metadata[0].kwargs
-#{'scalar': True}
 
 class So(Fix):
     """Fixes for Geopotential."""
