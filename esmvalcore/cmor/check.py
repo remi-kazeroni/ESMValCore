@@ -440,6 +440,15 @@ class CMORCheck():
                 continue
             var_name = coordinate.out_name
 
+            # Do not check data of hybrid height/pressure coordinates (this is
+            # NOT used to create the actual height/pressure coordinate values)
+            ignore_coords = [
+                'atmosphere_hybrid_height_coordinate',
+                'atmosphere_hybrid_sigma_pressure_coordinate',
+            ]
+            if coordinate.standard_name in ignore_coords:
+                continue
+
             # Get coordinate var_name as it exists!
             try:
                 coord = self._cube.coord(var_name=var_name)
