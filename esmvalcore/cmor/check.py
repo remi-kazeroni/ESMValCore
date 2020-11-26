@@ -443,7 +443,6 @@ class CMORCheck():
             # Do not check data of hybrid height/pressure coordinates (this is
             # NOT used to create the actual height/pressure coordinate values)
             ignore_coords = [
-                'atmosphere_hybrid_height_coordinate',
                 'atmosphere_hybrid_sigma_pressure_coordinate',
             ]
             if coordinate.standard_name in ignore_coords:
