@@ -1,9 +1,67 @@
 """Fixes for EC-Earth model."""
 from dask import array as da
 import iris
+import numpy as np
 
 from ..fix import Fix
 from ..shared import add_scalar_height_coord, cube_to_aux_coord
+
+
+class allvars(Fix):
+    """Common fixes to all vars"""
+
+    def fix_metadata(self, cubes):
+        """
+        Fix metadata.
+        Fixes error in time coordinate, sometimes contains trailing zeros
+        Parameters
+        ----------
+        cube: iris.cube.CubeList
+        Returns
+        -------
+        iris.cube.CubeList
+        """
+        for cube in cubes:
+            try:
+                old_time = cube.coord('time')
+                if old_time.is_monotonic():
+                    pass
+
+                time_units = old_time.units
+                time_data = old_time.points
+
+                d = np.diff(time_data)
+                idx_neg = np.where(d < 0.)[0]
+                while len(idx_neg) > 0:
+                    time_data = np.delete(time_data, idx_neg[0] + 1)
+                    d = np.diff(time_data)
+                    idx_neg = np.where(d < 0.)[0]
+
+                for idx in idx_zeros:
+                    if idx == 0:
+                        continue
+                    correct_time = time_units.num2date(time_data[idx - 1])
+                    if days <= 31 and days >=28:  # assume monthly time steps
+                        new_time = \
+                            correct_time.replace(month=correct_time.month + 1)
+                    else:  # use "time[1] - time[0]" as step
+                        new_time = correct_time + time_diff
+                    old_time.points[idx] = time_units.date2num(new_time)
+
+                # create new time bounds
+                old_time.bounds = None
+                old_time.guess_bounds()
+
+                # replace time coordinate with "repaired" values
+                new_time = iris.coords.DimCoord.from_coord(old_time)
+                time_idx = cube.coord_dims(old_time)
+                cube.remove_coord('time')
+                cube.add_dim_coord(new_time, time_idx)
+
+            except iris.exceptions.CoordinateNotFoundError:
+                pass
+
+        return cubes
 
 
 class Sic(Fix):
